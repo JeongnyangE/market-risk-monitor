@@ -1,0 +1,1119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KOSPI 리스크 모니터</title>
+<style>
+:root {
+  --color-fg: #1f1e1c; --color-fg-muted: #6b6963; --color-bg: #faf9f6; --color-panel: #ffffff; --color-border-line: #e4e2db;
+  --color-ok: #2c7a4b; --color-warn: #a86200; --color-bad: #c03a26;
+  --c1: #2f6bd6; --c2: #d4772a; --c3: #7a4cc0; --c4: #2a9384; --c5: #c2457e; --c6: #6b8a1f; --c7: #8a6a3a; --c8: #4a6f8f;
+  --cds-chart-grid: #ecebe6; --cds-chart-axis: #b7b5ad; --cds-chart-reference: #8e8c85; --cds-chart-muted: #c8c6be; --cds-chart-status-critical: #c03a26;
+  --cds-surface-popover: #ffffff; --cds-border: #dddbd4; --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.12); --cds-text-secondary: #6b6963;
+  --cds-font-size-caption: 12px; --cds-font-size-body: 14px; --cds-font-size-heading: 16px; --cds-font-size-title: 26px; --cds-font-weight-medium: 600;
+  --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 12px; --cds-gap-lg: 20px; --cds-gap-xl: 32px;
+  --cds-pad-xs: 4px; --cds-pad-sm: 8px; --cds-pad-md: 12px; --cds-pad-lg: 16px; --cds-radius: 10px; --cds-dur-slow: .4s;
+  --font-sans: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Noto Serif KR", "Nanum Myeongjo", Georgia, "Times New Roman", serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-fg: #ecebe7; --color-fg-muted: #a5a39c; --color-bg: #191919; --color-panel: #232322; --color-border-line: #383735;
+    --color-ok: #5cc28a; --color-warn: #e6a34d; --color-bad: #f07a62;
+    --c1: #6ea1ff; --c2: #f0a25a; --c3: #b18cff; --c4: #4cc3b0; --c5: #f07ab2; --c6: #a4c75a; --c7: #c9a66b; --c8: #8fb3d3;
+    --cds-chart-grid: #302f2d; --cds-chart-axis: #5a5853; --cds-chart-reference: #8a8882; --cds-chart-muted: #55534e; --cds-chart-status-critical: #f07a62;
+    --cds-surface-popover: #2b2a28; --cds-border: #45433f; --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.45); --cds-text-secondary: #a5a39c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --color-fg: #ecebe7; --color-fg-muted: #a5a39c; --color-bg: #191919; --color-panel: #232322; --color-border-line: #383735;
+  --color-ok: #5cc28a; --color-warn: #e6a34d; --color-bad: #f07a62;
+  --c1: #6ea1ff; --c2: #f0a25a; --c3: #b18cff; --c4: #4cc3b0; --c5: #f07ab2; --c6: #a4c75a; --c7: #c9a66b; --c8: #8fb3d3;
+  --cds-chart-grid: #302f2d; --cds-chart-axis: #5a5853; --cds-chart-reference: #8a8882; --cds-chart-muted: #55534e; --cds-chart-status-critical: #f07a62;
+  --cds-surface-popover: #2b2a28; --cds-border: #45433f; --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.45); --cds-text-secondary: #a5a39c;
+  color-scheme: dark;
+}
+html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
+body { padding: 20px clamp(16px, 3vw, 36px) 40px; -webkit-text-size-adjust: 100%; }
+.mrm { max-width: 1400px; margin-inline: auto; }
+.mrm { font-family: var(--font-sans); color: var(--color-fg); display: flex; flex-direction: column; gap: var(--cds-gap-lg); }
+.mrm h1 { font-family: var(--font-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; }
+.mrm-take { margin: var(--cds-gap-xs) 0 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-body); max-width: 78ch; line-height: 1.55; }
+.mrm-stamp { margin: var(--cds-gap-xs) 0 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.mrm-take b, .mrm-sub b { font-weight: var(--cds-font-weight-medium); color: var(--color-fg); }
+.mrm-tabs { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs); border-bottom: 1px solid var(--color-border-line); }
+.mrm-tab { appearance: none; background: none; border: 0; border-bottom: 2px solid transparent; padding: var(--cds-pad-sm) var(--cds-pad-md); font: inherit; font-size: var(--cds-font-size-body); color: var(--color-fg-muted); cursor: pointer; }
+.mrm-tab[aria-selected="true"] { color: var(--color-fg); border-bottom-color: var(--color-fg); }
+.mrm-page { display: flex; flex-direction: column; gap: var(--cds-gap-lg); }
+.mrm-page[hidden] { display: none; }
+.mrm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-md); }
+.mrm-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr)); gap: var(--cds-gap-md); }
+.mrm-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; position: relative; }
+.mrm-card h3, .mrm h2 { margin: 0; font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); }
+.mrm h2 { margin-top: var(--cds-gap-sm); }
+.mrm-note { margin: var(--cds-gap-xs) 0 var(--cds-gap-md); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); line-height: 1.5; }
+.mrm-kpi .lab { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.mrm-kpi .big { font-family: var(--font-serif); font-weight: 400; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; line-height: 1.2; margin: var(--cds-gap-xs) 0; min-height: 1.2em; }
+.mrm-kpi .sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; line-height: 1.5; }
+.mrm .bad { color: var(--color-bad); } .mrm .ok { color: var(--color-ok); } .mrm .warn { color: var(--color-warn); }
+.mrm-banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--cds-gap-md) var(--cds-gap-lg); }
+.mrm-regime { font-family: var(--font-serif); font-size: var(--cds-font-size-title); padding: var(--cds-pad-xs) var(--cds-pad-md); border-radius: var(--cds-radius); border: 1.5px solid currentColor; line-height: 1.2; min-width: 4ch; text-align: center; }
+.mrm-banner .meta { display: flex; flex-direction: column; gap: 2px; font-size: var(--cds-font-size-body); font-variant-numeric: tabular-nums; }
+.mrm-banner .meta .cap { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.mrm-gauge { flex: 1 1 18rem; min-width: 14rem; min-height: 54px; }
+.mrm-chart { width: 100%; position: relative; }
+.mrm-bars { display: flex; flex-direction: column; gap: var(--cds-gap-sm); min-height: 200px; }
+.mrm-bar-row { display: grid; grid-template-columns: minmax(6.5rem, 8.5rem) 1fr 3.4rem; align-items: center; gap: var(--cds-gap-sm); font-size: var(--cds-font-size-caption); }
+.mrm-bar-row .nm { color: var(--color-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mrm-bar-row .val { text-align: right; font-variant-numeric: tabular-nums; }
+.mrm-track { position: relative; height: 12px; border-radius: 6px; background: var(--cds-chart-grid); }
+.mrm-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; }
+.mrm-tick { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--color-fg); opacity: .55; border-radius: 1px; }
+.mrm-axis-head { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-xs); }
+.mrm-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-bottom: var(--cds-gap-sm); }
+.mrm-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.mrm-seg { display: inline-flex; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); overflow: hidden; }
+.mrm-seg button { appearance: none; border: 0; background: none; font: inherit; font-size: var(--cds-font-size-caption); padding: var(--cds-pad-xs) var(--cds-pad-sm); color: var(--color-fg-muted); cursor: pointer; }
+.mrm-seg button[aria-pressed="true"] { background: var(--color-bg); color: var(--color-fg); }
+.mrm-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--cds-gap-sm); }
+.mrm-wrap { max-height: 28rem; overflow: auto; }
+table.mrm-t { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+.mrm-t th { position: sticky; top: 0; z-index: 1; background: var(--color-panel); text-align: left; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+.mrm-t td { padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); vertical-align: top; }
+.mrm-t .num { text-align: right; white-space: nowrap; }
+.mrm-t th button { all: unset; cursor: pointer; }
+.mrm-t th button:focus-visible { outline: 2px solid var(--color-fg); }
+.mrm-cellbar { display: inline-block; height: 8px; border-radius: 4px; margin-right: 6px; vertical-align: 0; }
+.mrm-pill { display: inline-block; padding: 0 6px; border-radius: 999px; border: 1px solid currentColor; font-size: var(--cds-font-size-caption); white-space: nowrap; }
+.mrm-search { font: inherit; font-size: var(--cds-font-size-caption); padding: var(--cds-pad-xs) var(--cds-pad-sm); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: var(--color-bg); color: var(--color-fg); min-width: 12rem; }
+.mrm-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; white-space: nowrap; z-index: 3; }
+.mrm-tip .d { color: var(--cds-text-secondary); margin-bottom: 2px; }
+.mrm-tip i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
+.mrm-fail { display: flex; align-items: center; justify-content: center; gap: .45rem; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); min-height: inherit; text-decoration: none; }
+.mrm-fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
+.mrm-method { max-width: 80ch; font-size: var(--cds-font-size-body); line-height: 1.65; }
+.mrm-method h3 { margin: var(--cds-gap-lg) 0 var(--cds-gap-xs); }
+.mrm-method p, .mrm-method li { color: var(--color-fg); }
+.mrm-method ul { padding-left: 1.2rem; margin: var(--cds-gap-xs) 0; }
+.mrm-method code { font-size: var(--cds-font-size-caption); background: var(--color-bg); padding: 1px 4px; border-radius: 4px; }
+@media (max-width: 40rem) { .mrm-hide-narrow { display: none; } }
+</style>
+</head>
+<body>
+
+<div class="mrm">
+  <header class="mrm-head">
+    <h1 id="top">KOSPI 리스크 모니터</h1>
+    <p class="mrm-take">
+      <span data-source="kpi" data-field="asof" data-row="0" class="k-asof">—</span> 기준 종합 리스크 점수는
+      <b data-source="kpi" data-field="composite" data-row="0" class="k-comp">—</b>점,
+      레짐은 <b data-source="kpi" data-field="regime" data-row="0" class="k-reg">—</b>입니다.
+      스트레스 <b data-source="kpi" data-field="stress" data-row="0" class="k-st">—</b> ·
+      취약성 <b data-source="kpi" data-field="fragility" data-row="0" class="k-fr">—</b>로
+      <span class="k-quaddesc">—</span> <b data-source="kpi" data-field="quadrant" data-row="0" class="k-quad">—</b> 국면이며,
+      향후 63거래일 안에 −10% 이상 낙폭이 나올 확률은 보정 기준
+      <b data-source="kpi" data-field="prob_calibrated" data-row="0" class="k-pcal">—</b>(평상시
+      <span data-source="kpi" data-field="base_rate_holdout" data-row="0" class="k-base">—</span>)로 추정됩니다.
+      방향 예측이 아니라 '변동성·꼬리위험의 크기'를 재는 도구로 읽으세요.
+    </p>
+    <p class="mrm-stamp" id="stamp"></p>
+  </header>
+
+  <nav class="mrm-tabs" role="tablist" aria-label="페이지">
+    <button class="mrm-tab" role="tab" data-tab="now" id="tab-now">현재 판독</button>
+    <button class="mrm-tab" role="tab" data-tab="history" id="tab-history">이력</button>
+    <button class="mrm-tab" role="tab" data-tab="validation" id="tab-validation">검증</button>
+    <button class="mrm-tab" role="tab" data-tab="method" id="tab-method">방법론</button>
+  </nav>
+
+  <section class="mrm-page" id="now" hidden></section>
+  <section class="mrm-page" id="history" hidden></section>
+  <section class="mrm-page" id="validation" hidden></section>
+  <section class="mrm-page" id="method" hidden></section>
+</div>
+
+<template id="tpl-now">
+  <div class="mrm-card" id="regime-card">
+    <div class="mrm-banner">
+      <div class="mrm-regime" data-source="kpi" data-field="regime" data-row="0" id="regime-badge">—</div>
+      <div class="meta">
+        <span class="cap">KOSPI 재구성 지수 · 일간 · 1년 고점 대비</span>
+        <span>
+          <span data-source="kpi" data-field="index_level" data-row="0" class="k-idx">—</span>
+          (<span data-source="kpi" data-field="index_ret_1d" data-row="0" class="k-idxr">—</span>)
+          · <span data-source="kpi" data-field="drawdown_1y" data-row="0" class="k-dd">—</span>
+        </span>
+      </div>
+      <div class="mrm-gauge mrm-chart" id="gauge" data-source="kpi"></div>
+    </div>
+  </div>
+
+  <div class="mrm-kpis">
+    <div class="mrm-card mrm-kpi" id="kpi-composite">
+      <div class="lab">종합 리스크 점수 (0–100)</div>
+      <div class="big" data-source="kpi" data-field="composite" data-row="0">—</div>
+      <div class="sub">5일 전 대비 <span data-source="kpi_chg" data-field="composite_chg_5d" data-row="0" class="c5">—</span>점</div>
+    </div>
+    <div class="mrm-card mrm-kpi" id="kpi-stress">
+      <div class="lab">스트레스 축 · 지금 아픈가</div>
+      <div class="big" data-source="kpi" data-field="stress" data-row="0">—</div>
+      <div class="sub">5일 전 대비 <span data-source="kpi_chg" data-field="stress_chg_5d" data-row="0" class="c5">—</span>점</div>
+    </div>
+    <div class="mrm-card mrm-kpi" id="kpi-fragility">
+      <div class="lab">취약성 축 · 충격이 번지기 쉬운가</div>
+      <div class="big" data-source="kpi" data-field="fragility" data-row="0">—</div>
+      <div class="sub">5일 전 대비 <span data-source="kpi_chg" data-field="fragility_chg_5d" data-row="0" class="c5">—</span>점</div>
+    </div>
+    <div class="mrm-card mrm-kpi" id="kpi-prob">
+      <div class="lab">63일 내 −10% 낙폭 확률 (보정)</div>
+      <div class="big" data-source="kpi" data-field="prob_calibrated" data-row="0">—</div>
+      <div class="sub">모형 원값 <span data-source="kpi" data-field="prob_model" data-row="0">—</span> · 평상시 <span data-source="kpi" data-field="base_rate_holdout" data-row="0">—</span></div>
+    </div>
+    <div class="mrm-card mrm-kpi" id="kpi-vol">
+      <div class="lab">예상 변동성 (향후 21일, 연율)</div>
+      <div class="big" data-source="kpi" data-field="vol_forecast" data-row="0">—</div>
+      <div class="sub">21일 95% VaR <span data-source="kpi" data-field="var95_21d" data-row="0">—</span></div>
+    </div>
+    <div class="mrm-card mrm-kpi" id="kpi-var">
+      <div class="lab">1일 VaR 95%</div>
+      <div class="big" data-source="kpi" data-field="var95_1d" data-row="0">—</div>
+      <div class="sub">VaR 99% <span data-source="kpi" data-field="var99_1d" data-row="0">—</span> · ES 95% <span data-source="kpi" data-field="es95_1d" data-row="0">—</span></div>
+    </div>
+  </div>
+
+  <div class="mrm-grid">
+    <div class="mrm-card" id="cat-card">
+      <h3>카테고리별 위험 점수</h3>
+      <p class="mrm-note">확장창 백분위 평균(0–100, 높을수록 위험). 검은 눈금은 5거래일 전 위치.</p>
+      <div class="mrm-bars" id="cat-bars" data-source="categories"></div>
+    </div>
+    <div class="mrm-card" id="quad-card">
+      <h3>스트레스 × 취약성 사분면</h3>
+      <p class="mrm-note">최근 6개월 경로(흐린 점)와 현재 위치. 기준선은 1998–2011 학습구간 상위 25% 경계.</p>
+      <div class="mrm-chart" id="quad" data-source="history kpi" style="min-height:300px"></div>
+    </div>
+  </div>
+
+  <div class="mrm-grid">
+    <div class="mrm-card" id="alerts-card">
+      <h3>활성 경보</h3>
+      <p class="mrm-note">문헌 기반 조기경보 규칙(높음·중간)과 역사적 상위 5% 극단 신호(참고).</p>
+      <div class="mrm-wrap">
+        <table class="mrm-t" id="alerts-table" data-source="alerts" data-row-key="id">
+          <thead><tr><th data-field="level_kr">수준</th><th data-field="message">내용</th><th data-field="value" class="num">값</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="mrm-card" id="holdings-card">
+      <h3>시가총액 상위 10종목 비중</h3>
+      <p class="mrm-note">상위 2종목 합계 <b data-source="top2" data-field="share" data-row="0" class="k-top2">—</b> — 지수 위험이 소수 종목에 쏠려 있습니다.</p>
+      <div class="mrm-bars" id="hold-bars" data-source="top_holdings"></div>
+    </div>
+  </div>
+
+  <div class="mrm-card" id="signals-card">
+    <div class="mrm-row">
+      <h3>신호 상세</h3>
+      <input class="mrm-search" id="sig-search" type="search" placeholder="신호·카테고리 검색" aria-label="신호 검색">
+    </div>
+    <p class="mrm-note">백분위는 '그날까지의 과거 전체'에서의 위치(미래참조 없음). 홀드아웃 AUC는 2012년 이후 −10% 낙폭(63일)·고변동(21일) 예측력, 0.5가 무작위.</p>
+    <div class="mrm-wrap">
+      <table class="mrm-t" id="sig-table" data-source="signals" data-row-key="name">
+        <thead><tr>
+          <th data-field="label"><button data-k="label">신호</button></th>
+          <th data-field="category_label" class="mrm-hide-narrow"><button data-k="category_label">카테고리</button></th>
+          <th data-field="axis" class="mrm-hide-narrow"><button data-k="axis">축</button></th>
+          <th data-field="use" class="mrm-hide-narrow"><button data-k="use">용도</button></th>
+          <th data-field="raw" class="num mrm-hide-narrow"><button data-k="raw">원값</button></th>
+          <th data-field="pct" class="num"><button data-k="pct">백분위</button></th>
+          <th data-field="change_5d" class="num"><button data-k="change_5d">5일 변화</button></th>
+          <th data-field="test_dd" class="num"><button data-k="test_dd">AUC 낙폭</button></th>
+          <th data-field="test_vol" class="num mrm-hide-narrow"><button data-k="test_vol">AUC 변동성</button></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="mrm-card" id="fresh-card">
+    <h3>데이터 신선도</h3>
+    <p class="mrm-note">원천별 마지막 관측일. 글로벌 변수는 한국 장 기준 1영업일 지연 적용, 10영업일 넘게 끊기면 해당 신호 제외.</p>
+    <table class="mrm-t" id="fresh-table" data-source="freshness" data-row-key="series,last_obs">
+      <thead><tr><th data-field="series">시계열</th><th data-field="last_obs">마지막 관측</th><th data-field="note" class="mrm-hide-narrow">비고</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</template>
+
+<template id="tpl-history">
+  <div class="mrm-row">
+    <h2 id="hist-title">지수와 위험 점수의 이력</h2>
+    <div class="mrm-seg" id="range-seg" role="group" aria-label="기간">
+      <button data-r="2025-07-01">2025.7–</button>
+      <button data-r="3y">3년</button>
+      <button data-r="10y">10년</button>
+      <button data-r="all">1998–</button>
+    </div>
+  </div>
+  <div class="mrm-card" id="idx-card">
+    <h3>KOSPI 재구성 지수 (로그) · 배경 = 레짐</h3>
+    <div class="mrm-legend" id="reg-legend"></div>
+    <div class="mrm-chart" id="idx-chart" data-source="history" style="min-height:260px"></div>
+  </div>
+  <div class="mrm-card" id="score-card">
+    <h3>종합 · 스트레스 · 취약성 점수</h3>
+    <p class="mrm-note">점선은 레짐 경계(주의·경계·위험), 학습구간 종합점수의 50·75·90 백분위.</p>
+    <div class="mrm-chart" id="score-chart" data-source="history kpi" style="min-height:260px"></div>
+  </div>
+  <div class="mrm-grid">
+    <div class="mrm-card" id="prob-card">
+      <h3>63일 내 −10% 낙폭 확률 (워크포워드 모형 원값)</h3>
+      <p class="mrm-note">매년 그 시점까지 데이터로만 재학습. 원값은 높은 구간에서 과대추정 경향 — 검증 탭의 보정표 참고. 점선 = 2012년 이후 실제 발생 빈도.</p>
+      <div class="mrm-chart" id="prob-chart" data-source="history kpi" style="min-height:220px"></div>
+    </div>
+    <div class="mrm-card" id="vol-card">
+      <h3>예상 변동성(HAR) vs 1년 고점 대비 낙폭</h3>
+      <p class="mrm-note">변동성은 향후 21일 연율 예측치, 낙폭은 그날 기준 실현치.</p>
+      <div class="mrm-chart" id="vol-chart" data-source="history" style="min-height:220px"></div>
+    </div>
+  </div>
+  <div class="mrm-card" id="trans-card">
+    <h3>최근 레짐 전환</h3>
+    <p class="mrm-note">종합점수가 경계값을 넘나든 날짜.</p>
+    <table class="mrm-t" id="trans-table" data-source="transitions" data-row-key="date">
+      <thead><tr><th data-field="date">날짜</th><th data-field="regime">새 레짐</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</template>
+
+<template id="tpl-validation">
+  <p class="mrm-take" style="margin-top:0">
+    신호 선별·가중치·레짐 경계는 1998–2011년 데이터로만 정했고, 2012년 이후는 손대지 않은 홀드아웃입니다.
+    홀드아웃에서 종합점수의 −10% 낙폭(63일) 예측 AUC는
+    <b data-source="composite_auc" data-field="test_dd" data-where="signal=COMPOSITE" class="k-auc-dd">—</b>,
+    고변동(21일) 예측 AUC는
+    <b data-source="composite_auc" data-field="test_vol" data-where="signal=COMPOSITE" class="k-auc-vol">—</b>입니다.
+  </p>
+  <div class="mrm-grid">
+    <div class="mrm-card" id="rs-card">
+      <div class="mrm-row">
+        <h3>레짐별 이후 63일 낙폭 확률</h3>
+        <div class="mrm-seg" id="rs-seg" role="group" aria-label="표본">
+          <button data-s="홀드아웃 2012–">홀드아웃 2012–</button>
+          <button data-s="전체 1998–">전체 1998–</button>
+        </div>
+      </div>
+      <p class="mrm-note">해당 레짐이었던 날 이후 63거래일 안에 −10%·−20% 이상 낙폭이 나온 비율.</p>
+      <div class="mrm-legend" id="rs-legend"></div>
+      <div class="mrm-chart" id="rs-chart" data-source="regime_stats" style="min-height:230px"></div>
+    </div>
+    <div class="mrm-card" id="auc-card">
+      <h3>예측력(AUC): 학습 vs 홀드아웃</h3>
+      <p class="mrm-note">목표 = 63일 내 −10% 낙폭. 속 빈 점 = 학습(1998–2011), 채운 점 = 홀드아웃(2012–). 0.5 = 무작위.</p>
+      <div class="mrm-chart" id="auc-chart" data-source="composite_auc" style="min-height:360px"></div>
+    </div>
+  </div>
+  <div class="mrm-card" id="rs-table-card">
+    <h3>레짐별 사후 성과 전체</h3>
+    <p class="mrm-note">평균 최대낙폭·변동성·수익률은 이후 63일(변동성은 21일) 기준. 위험 레짐의 평균 수익률이 낮지 않은 것은 급락 직후 반등이 섞이기 때문 — 이 모형은 방향이 아니라 분포의 폭을 잽니다.</p>
+    <div class="mrm-wrap">
+      <table class="mrm-t" id="rs-table" data-source="regime_stats" data-row-key="key">
+        <thead><tr>
+          <th data-field="sample">표본</th><th data-field="regime">레짐</th>
+          <th data-field="days_share" class="num">일수 비중</th><th data-field="p_dd10" class="num">P(−10%)</th>
+          <th data-field="p_dd20" class="num">P(−20%)</th><th data-field="avg_fwd_maxdd" class="num">평균 최대낙폭</th>
+          <th data-field="avg_fwd_vol21" class="num mrm-hide-narrow">평균 변동성</th><th data-field="avg_fwd_ret63" class="num mrm-hide-narrow">평균 수익률</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="mrm-grid">
+    <div class="mrm-card" id="cal-card">
+      <h3>확률 보정표 (홀드아웃)</h3>
+      <p class="mrm-note">예측 확률 구간별 실제 발생 빈도. 대각선 아래 = 과대추정. 원 크기 = 관측 일수. 그래서 현재 판독은 등위회귀로 보정한 값을 함께 씁니다.</p>
+      <div class="mrm-chart" id="cal-chart" data-source="calibration" style="min-height:260px"></div>
+    </div>
+    <div class="mrm-card" id="ov-card">
+      <h3>리스크 오버레이 비교 (예시)</h3>
+      <p class="mrm-note">레짐별 노출(안정·주의 100%, 경계 60%, 위험 30%) 또는 예상 변동성 20% 목표, 익일 적용·거래비용 10bp. 낙폭은 줄지만 수익 개선은 없음 — 타이밍 도구가 아니라는 근거.</p>
+      <div class="mrm-wrap">
+        <table class="mrm-t" id="ov-table" data-source="overlay" data-row-key="key">
+          <thead><tr>
+            <th data-field="strategy">전략</th><th data-field="sample">기간</th><th data-field="cagr" class="num">연수익</th>
+            <th data-field="vol" class="num mrm-hide-narrow">변동성</th><th data-field="sharpe" class="num">샤프</th>
+            <th data-field="maxdd" class="num">최대낙폭</th><th data-field="avg_exposure" class="num mrm-hide-narrow">평균노출</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="mrm-card" id="ev-card">
+    <h3>대형 하락(−20% 이상) 사건 연구</h3>
+    <p class="mrm-note">고점 시점의 취약성(F)·스트레스(S)·종합(C) 점수, 고점 전 6개월 중 '경계 이상' 일수, 고점 후 첫 '경계 이상'까지 걸린 거래일.</p>
+    <div class="mrm-wrap">
+      <table class="mrm-t" id="ev-table" data-source="events" data-row-key="key">
+        <thead><tr>
+          <th data-field="key">고점</th><th data-field="trough">저점</th><th data-field="depth" class="num">낙폭</th>
+          <th data-field="F_at_peak" class="num">F</th><th data-field="S_at_peak" class="num">S</th><th data-field="C_at_peak" class="num">C</th>
+          <th data-field="warn_days_6m_before" class="num">사전 경계일</th><th data-field="days_peak_to_warn" class="num">고점→경계</th>
+          <th data-field="prob_at_peak" class="num mrm-hide-narrow">고점 확률</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="mrm-card" id="aucall-card">
+    <h3>카테고리·축 AUC 전체</h3>
+    <div class="mrm-wrap">
+      <table class="mrm-t" id="auc-table" data-source="composite_auc" data-row-key="signal">
+        <thead><tr>
+          <th data-field="label">항목</th><th data-field="train_dd" class="num">학습 낙폭</th><th data-field="test_dd" class="num">홀드아웃 낙폭</th>
+          <th data-field="train_vol" class="num">학습 변동성</th><th data-field="test_vol" class="num">홀드아웃 변동성</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-method">
+  <div class="mrm-card mrm-method" id="method-card">
+    <h3 style="margin-top:0">무엇을 재는가</h3>
+    <p>시장 위험을 두 축으로 나눠 봅니다. <b>스트레스</b>는 지금 시장이 아픈지(변동성, 낙폭, 난기류, 시장 폭, 추세, 유동성, 글로벌 변수)를, <b>취약성</b>은 충격이 왔을 때 크게 번질 구조인지(흡수비율, 시총 집중도, 회전율 과열, 유가·환율 압력)를 잽니다. 종합점수는 두 축의 가중평균이고, 가중치는 학습구간 예측력으로 정했습니다.</p>
+    <h3>데이터</h3>
+    <ul>
+      <li>KRX 전 종목 일별 시세·시가총액(GitHub FinanceData/marcap, 1995–) → 보통주 시가총액가중으로 KOSPI를 재구성(실제 지수와 오차 ±1% 이내 확인).</li>
+      <li>VIX(Cboe), 주요국 환율(FRB H.10), 브렌트유(EIA) — GitHub datasets 저장소. 최근 공백은 Cboe 주간 리포트 등에서 수동 보강하고 출처를 표시.</li>
+      <li>미국 모듈(S&amp;P 500): yfinance 섹터 ETF + FRED 신용스프레드·금리·금융스트레스지수 — 인터넷이 되는 환경에서 실행.</li>
+    </ul>
+    <h3>신호와 정규화</h3>
+    <ul>
+      <li>변동성: EWMA(λ=0.94), 10일/126일 변동성 비율, 하방 변동성 · 꼬리: 1년 고점 대비 낙폭, CVaR 95%(126일)</li>
+      <li>시스템: Kritzman 금융 난기류(시총 상위 50종목 마할라노비스 거리), 흡수비율 급변(ΔAR) · 시장 폭: 200일선 위 종목 비율, 신저가−신고가, 상승종목 비율</li>
+      <li>유동성: Amihud 비유동성(1년 중앙값 대비), 종목간 분산 · 글로벌: VIX 수준·변화, 엔 강세, 달러 강세</li>
+      <li>취약성: 흡수비율(상위 100종목, 상위 20% 고유벡터), 상위 5종목 집중도, 회전율 과열, 유가 충격·수준, 원화 약세 누적</li>
+      <li>각 신호는 '그날까지의 과거 전체' 분포에서의 백분위(확장창, 최소 2년)로 바꿔 미래참조를 막습니다. 해외 변수는 1영업일 지연.</li>
+    </ul>
+    <h3>검증 설계</h3>
+    <ul>
+      <li>학습 1998–2011 / 홀드아웃 2012–현재. 신호 채택(학습구간 AUC 기준), 축 가중치, 레짐 경계(학습구간 종합점수 50·75·90 백분위)는 모두 학습구간에서만 결정.</li>
+      <li>원화 21일 변화, 200일선 상방 과열은 학습구간에서 역방향이라 종합점수에서 빼고 경보·모니터링용으로만 둡니다.</li>
+      <li>확률모형: 카테고리 점수 → 로지스틱 회귀, 매년 확장창 재학습(63일 엠바고). 현재값은 과거 표본외 예측으로 등위회귀 보정.</li>
+      <li>예상 변동성: HAR(5·21·63일 실현변동성) 워크포워드. VaR는 변동성 표준화 잔차의 역사적 분위수(필터드 히스토리컬).</li>
+    </ul>
+    <h3>한계</h3>
+    <ul>
+      <li>위험 점수는 향후 변동성·낙폭 '크기'를 잘 구분하지만 수익률 '방향'은 맞히지 못합니다(위험 레짐 직후 반등 빈번).</li>
+      <li>취약성 경보는 수개월 앞설 수 있습니다 — 2026년 3월 '위험' 진입 후에도 지수는 6월까지 크게 올랐습니다.</li>
+      <li>신용스프레드·신용융자·외국인 순매수·옵션 내재변동성(VKOSPI) 등 국내 핵심 변수는 이 실행환경에서 받을 수 없어 빠져 있습니다.</li>
+    </ul>
+    <h3>업데이트</h3>
+    <p>GitHub Actions가 평일마다 <code>run_monitor.py</code>로 데이터를 받아 다시 계산하고, 이 페이지를 새로 만들어 GitHub Pages에 올리며, 같은 결과를 Notion 데이터베이스와 요약 페이지에 기록합니다. 수동 실행은 <code>python run_monitor.py --market KR --sync</code>.</p>
+  </div>
+</template>
+
+<script>/*__D3__*/</script>
+<script id="mrm-data" type="application/json">__MRM_DATA__</script>
+<script>
+/* 아티팩트 런타임(dash) 대신 이 파일에 들어 있는 데이터를 읽는 최소 구현 */
+(function () {
+  var q = new URLSearchParams(location.search);
+  var th = q.get('theme');
+  if (th === 'dark' || th === 'light') document.documentElement.dataset.theme = th;
+  var RAW = JSON.parse(document.getElementById('mrm-data').textContent);
+  var cache = {}, fns = [];
+  window.dash = {
+    data: function (id) {
+      if (!(id in cache)) {
+        var t = RAW.tables[id];
+        if (!t) return { status: 'missing', data: [] };
+        cache[id] = t.rows.map(function (r) { var o = {}; t.columns.forEach(function (c, i) { o[c] = r[i]; }); return o; });
+      }
+      return { status: 'ok', data: cache[id] };
+    },
+    calc: function (id, o) { cache[id] = o.fn.apply(null, o.inputs.map(function (i) { return window.dash.data(i).data; })); },
+    colors: ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)', 'var(--c7)', 'var(--c8)'],
+    onData: function (fn) { fns.push(fn); fn(); },
+    setLink: function (id) { try { history.replaceState(null, '', location.search + '#' + id); } catch (e) {} },
+    meta: RAW.meta,
+  };
+  var lastW = 0, timer = null;
+  new ResizeObserver(function () {
+    var w = document.body.clientWidth;
+    if (Math.abs(w - lastW) < 2) return;
+    lastW = w;
+    clearTimeout(timer);
+    timer = setTimeout(function () { fns.forEach(function (f) { f(); }); }, 120);
+  }).observe(document.body);
+})();
+</script>
+<script>
+(function () {
+  const N = (v) => (v === null || v === undefined || v === '' ? NaN : +v);
+  const ok = (v) => Number.isFinite(v);
+  const f1 = d3.format('.1f'), f2 = d3.format('.2f'), f3 = d3.format('.3f'), p0 = d3.format('.0%'), p1 = d3.format('.1%');
+  const s1 = d3.format('+.1f'), sp1 = d3.format('+.1%'), cm0 = d3.format(',.0f');
+  const show = (v, f) => (ok(v) ? f(v) : '—');
+  const REG = ['안정', '주의', '경계', '위험'];
+  const regColor = (r) => ({ '안정': 'var(--color-ok)', '주의': 'var(--color-fg-muted)', '경계': 'var(--color-warn)', '위험': 'var(--color-bad)' }[r] || 'var(--color-fg-muted)');
+  const regClass = (r) => ({ '안정': 'ok', '경계': 'warn', '위험': 'bad' }[r] || '');
+
+  dash.calc('kpi_chg', {
+    inputs: ['kpi'],
+    title: '점수 5일 변화',
+    description: '종합·스트레스·취약성 점수의 5거래일 전 대비 변화(점).',
+    fn: (kpi) => kpi.map((r) => ({
+      composite_chg_5d: +r.composite - +r.composite_5d_ago,
+      stress_chg_5d: +r.stress - +r.stress_5d_ago,
+      fragility_chg_5d: +r.fragility - +r.fragility_5d_ago,
+    })),
+  });
+  dash.calc('top2', {
+    inputs: ['top_holdings'],
+    title: '상위 2종목 비중 합계',
+    description: '시가총액 1·2위 종목의 KOSPI 보통주 시가총액 대비 비중 합.',
+    fn: (top_holdings) => [{ share: top_holdings.slice(0, 2).reduce((a, r) => a + +r.weight, 0) }],
+  });
+
+  // ---------- helpers ----------
+  function failLine(el) {
+    el.querySelectorAll(':scope > svg, :scope > .mrm-tip').forEach((n) => n.remove());
+    if (!el.querySelector(':scope > .mrm-fail')) {
+      const d = document.createElement('div');
+      d.className = 'mrm-fail';
+      d.textContent = 'Failed to load';
+      el.appendChild(d);
+    }
+  }
+  function gate(el, ids) {
+    const ds = ids.map((id) => dash.data(id));
+    if (ds.every((d) => d.status === 'ok')) {
+      el.classList.remove('dash-skeleton');
+      el.querySelector(':scope > .mrm-fail')?.remove();
+      return ds;
+    }
+    el.querySelectorAll(':scope > svg, :scope > .mrm-tip').forEach((n) => n.remove());
+    if (el.classList.contains('mrm-bars')) el.replaceChildren();
+    if (ds.some((d) => d.status === 'error' || d.status === 'connect' || d.status === 'declined' || d.status === 'missing')) {
+      el.classList.remove('dash-skeleton');
+      failLine(el);
+    } else {
+      el.classList.add('dash-skeleton');
+    }
+    return null;
+  }
+  function setAll(root, sel, text) { root.querySelectorAll(sel).forEach((n) => { n.textContent = text; }); }
+  function textW(svg, str, cls) {
+    const t = svg.append('text').attr('class', cls || '').attr('font-size', 'var(--cds-font-size-caption)').text(str);
+    const w = t.node().getComputedTextLength();
+    t.remove();
+    return w;
+  }
+  function tipFor(el) {
+    let tip = el.querySelector(':scope > .mrm-tip');
+    if (!tip) { tip = document.createElement('div'); tip.className = 'mrm-tip'; tip.hidden = true; el.appendChild(tip); }
+    return tip;
+  }
+  function placeTip(el, tip, px, py) {
+    tip.hidden = false;
+    const W = el.clientWidth, tw = tip.offsetWidth, th = tip.offsetHeight;
+    let left = px + 12; if (left + tw > W) left = px - tw - 12; if (left < 0) left = 0;
+    let top = py - th - 8; if (top < 0) top = py + 12;
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  }
+  function tipLine(parent, color, name, val) {
+    const row = document.createElement('div');
+    if (color) { const i = document.createElement('i'); i.style.background = color; row.appendChild(i); }
+    row.appendChild(document.createTextNode(name + ' ' + val));
+    parent.appendChild(row);
+  }
+  function sortRows(rows, key, dir) {
+    return rows.slice().sort((a, b) => {
+      const x = N(a[key]), y = N(b[key]);
+      let c;
+      if (ok(x) && ok(y)) c = x - y; else if (ok(x)) c = -1; else if (ok(y)) c = 1; else c = String(a[key] ?? '').localeCompare(String(b[key] ?? ''), 'ko');
+      return dir === 'asc' ? c : -c;
+    });
+  }
+  function fillTable(table, rows, cols, keyOf) {
+    const tb = table.querySelector('tbody');
+    tb.replaceChildren();
+    rows.forEach((r) => {
+      const tr = document.createElement('tr');
+      tr.dataset.key = keyOf(r);
+      cols.forEach((c) => {
+        const td = document.createElement('td');
+        if (c.num) td.className = 'num';
+        if (c.hide) td.classList.add('mrm-hide-narrow');
+        if (c.render) c.render(td, r); else td.textContent = c.fmt ? c.fmt(r[c.f], r) : (r[c.f] ?? '');
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+  }
+  const enc = (s) => encodeURIComponent(String(s));
+
+  // ---------- generic line chart ----------
+  function lineChart(el, o) {
+    el.querySelectorAll(':scope > svg').forEach((n) => n.remove());
+    const W = Math.max(280, el.clientWidth), H = o.height || 240;
+    el.style.minHeight = H + 'px';
+    const rows = o.rows;
+    if (!rows.length) return;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('height', H).attr('viewBox', `0 0 ${W} ${H}`)
+      .attr('font-family', 'var(--font-sans)').style('display', 'block');
+    let dom = o.y;
+    if (!dom) {
+      const v = rows.flatMap((r) => o.series.map((s) => r[s.key])).filter(ok);
+      dom = d3.extent(v);
+      if (o.y0 !== undefined) dom[0] = Math.min(dom[0], o.y0);
+    }
+    const y = o.log ? d3.scaleLog().domain(dom) : d3.scaleLinear().domain(dom);
+    if (!o.y && !o.log) y.nice(4);
+    let ticks;
+    if (o.log) {
+      const cand = [100, 200, 300, 500, 1000, 1500, 2000, 3000, 4000, 6000, 8000, 10000, 15000];
+      ticks = cand.filter((t) => t >= y.domain()[0] && t <= y.domain()[1]);
+      if (ticks.length > 6) ticks = ticks.filter((_, i) => i % 2 === 0);
+    } else ticks = y.ticks(H < 230 ? 4 : 5);
+    const yf = o.yFmt || f1;
+    const ml = Math.ceil(d3.max(ticks, (t) => textW(svg, yf(t)))) + 10;
+    const last = (s) => { for (let i = rows.length - 1; i >= 0; i--) if (ok(rows[i][s.key])) return rows[i]; return null; };
+    const endLabels = o.series.map((s) => { const r = last(s); return r ? { s, r, txt: `${s.label} ${s.fmt ? s.fmt(r[s.key]) : yf(r[s.key])}` } : null; }).filter(Boolean);
+    const mr = (o.endLabels === false ? 8 : Math.ceil(d3.max(endLabels, (e) => textW(svg, e.txt)) || 0) + 14);
+    const mt = 10, mb = 24;
+    y.range([H - mb, mt]);
+    const x = d3.scaleUtc().domain(d3.extent(rows, (r) => r.date)).range([ml, W - mr]);
+    const spanY = (x.domain()[1] - x.domain()[0]) / (365.25 * 864e5);
+    const xf = spanY > 4 ? d3.utcFormat('%Y') : (spanY > 1.2 ? d3.utcFormat('%Y.%m') : d3.utcFormat('%m/%d'));
+    const xt = x.ticks(Math.max(2, Math.floor((W - ml - mr) / 80)));
+    // regime bands
+    if (o.bands) {
+      let start = 0;
+      for (let i = 1; i <= rows.length; i++) {
+        if (i === rows.length || rows[i].regime !== rows[start].regime) {
+          const x0 = x(rows[start].date), x1 = i < rows.length ? x(rows[i].date) : x(rows[rows.length - 1].date);
+          svg.append('rect').attr('x', x0).attr('y', mt).attr('width', Math.max(0, x1 - x0)).attr('height', H - mb - mt)
+            .style('fill', regColor(rows[start].regime)).attr('fill-opacity', 0.14);
+          start = i;
+        }
+      }
+    }
+    svg.append('g').selectAll('line').data(ticks).join('line').attr('x1', ml).attr('x2', W - mr).attr('y1', (t) => y(t)).attr('y2', (t) => y(t))
+      .style('stroke', 'var(--cds-chart-grid)').attr('stroke-width', 1);
+    svg.append('g').selectAll('text').data(ticks).join('text').attr('x', ml - 6).attr('y', (t) => y(t)).attr('dy', '0.32em').attr('text-anchor', 'end')
+      .attr('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg-muted)').text((t) => yf(t));
+    svg.append('line').attr('x1', ml).attr('x2', W - mr).attr('y1', H - mb).attr('y2', H - mb).style('stroke', 'var(--cds-chart-axis)');
+    svg.append('g').selectAll('text').data(xt).join('text').attr('x', (t) => x(t)).attr('y', H - 6).attr('text-anchor', 'middle')
+      .attr('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg-muted)').text((t) => xf(t));
+    (o.refs || []).forEach((rf) => {
+      if (!ok(rf.y) || rf.y < y.domain()[0] || rf.y > y.domain()[1]) return;
+      svg.append('line').attr('x1', ml).attr('x2', W - mr).attr('y1', y(rf.y)).attr('y2', y(rf.y))
+        .style('stroke', rf.color || 'var(--cds-chart-reference)').attr('stroke-dasharray', '4 4').attr('stroke-width', 1);
+      svg.append('text').attr('x', ml + 4).attr('y', y(rf.y) - 4).attr('font-size', 'var(--cds-font-size-caption)')
+        .style('fill', rf.color || 'var(--color-fg-muted)').text(rf.label);
+    });
+    o.series.forEach((s) => {
+      const line = d3.line().defined((r) => ok(r[s.key])).x((r) => x(r.date)).y((r) => y(r[s.key]));
+      svg.append('path').datum(rows).attr('d', line).attr('fill', 'none').style('stroke', s.color)
+        .attr('stroke-width', s.width || 2).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round').attr('stroke-opacity', s.opacity || 1);
+    });
+    if (o.endLabels !== false) {
+      const lab = endLabels.map((e) => ({ ...e, yy: y(e.r[e.s.key]) })).sort((a, b) => a.yy - b.yy);
+      for (let i = 1; i < lab.length; i++) if (lab[i].yy - lab[i - 1].yy < 14) lab[i].yy = lab[i - 1].yy + 14;
+      lab.forEach((e) => svg.append('text').attr('x', W - mr + 6).attr('y', Math.min(H - mb, e.yy)).attr('dy', '0.32em')
+        .attr('font-size', 'var(--cds-font-size-caption)').style('fill', e.s.color).text(e.txt));
+    }
+    // tooltip
+    const tip = tipFor(el);
+    const rule = svg.append('line').attr('y1', mt).attr('y2', H - mb).style('stroke', 'var(--cds-chart-axis)').attr('opacity', 0);
+    const dots = o.series.map((s) => svg.append('circle').attr('r', 3.5).style('fill', s.color).attr('opacity', 0));
+    const bis = d3.bisector((r) => r.date).center;
+    svg.append('rect').attr('x', ml).attr('y', mt).attr('width', W - ml - mr).attr('height', H - mb - mt).attr('fill', 'transparent')
+      .on('pointermove', (ev) => {
+        const [mx, my] = d3.pointer(ev);
+        const r = rows[bis(rows, x.invert(mx))];
+        if (!r) return;
+        rule.attr('x1', x(r.date)).attr('x2', x(r.date)).attr('opacity', 1);
+        o.series.forEach((s, i) => { if (ok(r[s.key])) dots[i].attr('cx', x(r.date)).attr('cy', y(r[s.key])).attr('opacity', 1); else dots[i].attr('opacity', 0); });
+        tip.replaceChildren();
+        const d = document.createElement('div'); d.className = 'd'; d.textContent = r.ds + (r.regime ? ' · ' + r.regime : ''); tip.appendChild(d);
+        o.series.forEach((s) => tipLine(tip, o.series.length > 1 ? s.color : null, s.label, s.fmt ? show(r[s.key], s.fmt) : show(r[s.key], yf)));
+        const scale = el.clientWidth / W;
+        placeTip(el, tip, x(r.date) * scale, my * scale);
+      })
+      .on('pointerleave', () => { tip.hidden = true; rule.attr('opacity', 0); dots.forEach((d) => d.attr('opacity', 0)); });
+  }
+
+  // ---------- history cache ----------
+  let HC = { ref: null, rows: [] };
+  function histRows() {
+    const d = dash.data('history');
+    if (d.status !== 'ok') return null;
+    if (HC.ref !== d.data) {
+      HC.ref = d.data;
+      HC.rows = d.data.map((r) => ({
+        date: new Date(r.date + 'T00:00:00Z'), ds: r.date, kospi: N(r.kospi), composite: N(r.composite), stress: N(r.stress),
+        fragility: N(r.fragility), prob: N(r.prob), vol: N(r.vol_fc), dd: N(r.drawdown), regime: r.regime,
+      }));
+    }
+    return HC.rows;
+  }
+
+  // ---------- header ----------
+  function drawHeader() {
+    const root = document.querySelector('.mrm-head');
+    const d = dash.data('kpi');
+    const k = d.status === 'ok' ? d.data[0] : null;
+    setAll(root, '.k-asof', k ? k.asof : '—');
+    setAll(root, '.k-comp', k ? f1(N(k.composite)) : '—');
+    setAll(root, '.k-reg', k ? k.regime : '—');
+    setAll(root, '.k-st', k ? f1(N(k.stress)) : '—');
+    setAll(root, '.k-fr', k ? f1(N(k.fragility)) : '—');
+    setAll(root, '.k-quad', k ? k.quadrant : '—');
+    const QD = { '위기(Crisis)': '두 축이 모두 높은', '충격(Shock)': '스트레스는 높지만 구조적 취약성은 상대적으로 낮은',
+      '취약·안일(Fragile)': '겉보기 스트레스는 낮지만 구조적 취약성이 쌓인', '안정(Calm)': '두 축이 모두 낮은' };
+    setAll(root, '.k-quaddesc', k ? (QD[k.quadrant] || '') : '—');
+    setAll(root, '.k-pcal', k ? p0(N(k.prob_calibrated)) : '—');
+    setAll(root, '.k-base', k ? p0(N(k.base_rate_holdout)) : '—');
+    const st = document.getElementById('stamp');
+    if (st && dash.meta) st.textContent = `데이터 기준일 ${dash.meta.asof} · 생성 ${dash.meta.generated_at} · 출처 ${dash.meta.sources}`;
+    root.querySelectorAll('.k-reg').forEach((n) => { n.className = 'k-reg ' + (k ? regClass(k.regime) : ''); });
+  }
+
+  // ---------- NOW page ----------
+  function drawNow(page) {
+    const kd = dash.data('kpi');
+    const k = kd.status === 'ok' ? kd.data[0] : null;
+    const badge = page.querySelector('#regime-badge');
+    badge.textContent = k ? k.regime : '—';
+    badge.style.color = k ? regColor(k.regime) : '';
+    setAll(page, '.k-idx', k ? cm0(N(k.index_level)) : '—');
+    setAll(page, '.k-idxr', k ? sp1(N(k.index_ret_1d)) : '—');
+    setAll(page, '.k-dd', k ? p1(N(k.drawdown_1y)) : '—');
+    const fmtOf = { composite: f1, stress: f1, fragility: f1, prob_calibrated: p0, prob_model: p0, base_rate_holdout: p0, vol_forecast: p0, var95_21d: p1, var95_1d: p1, var99_1d: p1, es95_1d: p1 };
+    page.querySelectorAll('.mrm-kpi [data-source="kpi"]').forEach((n) => {
+      const f = n.dataset.field;
+      n.textContent = k ? show(N(k[f]), fmtOf[f] || f1) : '—';
+    });
+    const cd = dash.data('kpi_chg');
+    const c = cd.status === 'ok' ? cd.data[0] : null;
+    page.querySelectorAll('[data-source="kpi_chg"]').forEach((n) => {
+      const v = c ? N(c[n.dataset.field]) : NaN;
+      n.textContent = show(v, s1);
+      n.className = 'c5 ' + (ok(v) ? (v > 0.05 ? 'bad' : (v < -0.05 ? 'ok' : '')) : '');
+    });
+    drawGauge(page.querySelector('#gauge'));
+    drawCats(page.querySelector('#cat-bars'));
+    drawQuad(page.querySelector('#quad'));
+    drawAlerts(page.querySelector('#alerts-table'));
+    drawHold(page.querySelector('#hold-bars'), page);
+    drawSignals(page.querySelector('#sig-table'));
+    drawFresh(page.querySelector('#fresh-table'));
+  }
+
+  function drawGauge(el) {
+    const g = gate(el, ['kpi']);
+    if (!g) return;
+    const k = g[0].data[0];
+    el.querySelectorAll(':scope > svg').forEach((n) => n.remove());
+    const W = Math.max(220, el.clientWidth), H = 54, ml = 6, mr = 6, top = 18, bh = 12;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('height', H).attr('viewBox', `0 0 ${W} ${H}`).style('display', 'block');
+    const x = d3.scaleLinear().domain([0, 100]).range([ml, W - mr]);
+    const cuts = [0, N(k.cut_watch), N(k.cut_alert), N(k.cut_danger), 100];
+    REG.forEach((r, i) => {
+      svg.append('rect').attr('x', x(cuts[i])).attr('y', top).attr('width', Math.max(0, x(cuts[i + 1]) - x(cuts[i]) - 1)).attr('height', bh)
+        .attr('rx', 3).style('fill', regColor(r)).attr('fill-opacity', 0.35);
+      const mid = (x(cuts[i]) + x(cuts[i + 1])) / 2;
+      svg.append('text').attr('x', mid).attr('y', top + bh + 14).attr('text-anchor', 'middle').attr('font-size', 'var(--cds-font-size-caption)')
+        .style('fill', 'var(--color-fg-muted)').text(r);
+    });
+    const v = N(k.composite);
+    svg.append('path').attr('d', d3.symbol(d3.symbolTriangle, 70)()).attr('transform', `translate(${x(v)},${top - 7}) rotate(180)`).style('fill', 'var(--color-fg)');
+    const lbl = '현재 ' + f1(v);
+    const lw = textW(svg, lbl);
+    svg.append('text').attr('x', Math.min(W - mr - lw / 2, Math.max(ml + lw / 2, x(v)))).attr('y', 9).attr('text-anchor', 'middle')
+      .attr('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg)').text(lbl);
+  }
+
+  function barRow(parent, name, val, pct, color, tick) {
+    const row = document.createElement('div'); row.className = 'mrm-bar-row';
+    const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = name; nm.title = name;
+    const tr = document.createElement('div'); tr.className = 'mrm-track';
+    const fl = document.createElement('div'); fl.className = 'mrm-fill'; fl.style.width = Math.max(0, Math.min(100, pct)) + '%'; fl.style.background = color;
+    tr.appendChild(fl);
+    if (ok(tick)) { const t = document.createElement('div'); t.className = 'mrm-tick'; t.style.left = `calc(${Math.max(0, Math.min(100, tick))}% - 1px)`; tr.appendChild(t); }
+    const vl = document.createElement('div'); vl.className = 'val'; vl.textContent = val;
+    row.append(nm, tr, vl);
+    parent.appendChild(row);
+  }
+
+  function drawCats(el) {
+    const g = gate(el, ['categories']);
+    if (!g) return;
+    el.replaceChildren();
+    const rows = g[0].data;
+    ['스트레스', '취약성'].forEach((ax, ai) => {
+      const h = document.createElement('div'); h.className = 'mrm-axis-head'; h.textContent = ax + ' 축'; el.appendChild(h);
+      rows.filter((r) => r.axis === ax).forEach((r) => {
+        const v = N(r.score);
+        const color = v >= 80 ? 'var(--cds-chart-status-critical)' : dash.colors[ai];
+        barRow(el, r.label, show(v, f1), v, color, N(r.score_5d_ago));
+      });
+    });
+  }
+
+  function drawQuad(el) {
+    const g = gate(el, ['history', 'kpi']);
+    if (!g) return;
+    const rows = histRows();
+    const k = g[1].data[0];
+    el.querySelectorAll(':scope > svg').forEach((n) => n.remove());
+    const W = Math.max(260, el.clientWidth), H = 300, ml = 46, mr = 12, mt = 12, mb = 34;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('height', H).attr('viewBox', `0 0 ${W} ${H}`).style('display', 'block');
+    const x = d3.scaleLinear().domain([0, 100]).range([ml, W - mr]);
+    const y = d3.scaleLinear().domain([0, 100]).range([H - mb, mt]);
+    const sT = N(k.quad_stress_thr), fT = N(k.quad_fragility_thr);
+    [0, 25, 50, 75, 100].forEach((t) => {
+      svg.append('line').attr('x1', x(t)).attr('x2', x(t)).attr('y1', mt).attr('y2', H - mb).style('stroke', 'var(--cds-chart-grid)');
+      svg.append('line').attr('x1', ml).attr('x2', W - mr).attr('y1', y(t)).attr('y2', y(t)).style('stroke', 'var(--cds-chart-grid)');
+      svg.append('text').attr('x', x(t)).attr('y', H - mb + 14).attr('text-anchor', 'middle').attr('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg-muted)').text(t);
+      svg.append('text').attr('x', ml - 6).attr('y', y(t)).attr('dy', '0.32em').attr('text-anchor', 'end').attr('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg-muted)').text(t);
+    });
+    svg.append('text').attr('x', (ml + W - mr) / 2).attr('y', H - 4).attr('text-anchor', 'middle').attr('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg-muted)').text('취약성 →');
+    svg.append('text').attr('transform', `translate(10,${(mt + H - mb) / 2}) rotate(-90)`).attr('text-anchor', 'middle').attr('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg-muted)').text('스트레스 →');
+    svg.append('line').attr('x1', x(fT)).attr('x2', x(fT)).attr('y1', mt).attr('y2', H - mb).style('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '4 4');
+    svg.append('line').attr('x1', ml).attr('x2', W - mr).attr('y1', y(sT)).attr('y2', y(sT)).style('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '4 4');
+    const q = [['안정', ml + 4, H - mb - 6, 'start'], ['취약·안일', W - mr - 4, H - mb - 6, 'end'], ['충격', ml + 4, mt + 12, 'start'], ['위기', W - mr - 4, mt + 12, 'end']];
+    q.forEach(([t, xx, yy, a]) => svg.append('text').attr('x', xx).attr('y', yy).attr('text-anchor', a).attr('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg-muted)').text(t));
+    const trail = rows.slice(-126).filter((r) => ok(r.stress) && ok(r.fragility));
+    svg.append('path').datum(trail).attr('d', d3.line().x((r) => x(r.fragility)).y((r) => y(r.stress))).attr('fill', 'none')
+      .style('stroke', dash.colors[0]).attr('stroke-opacity', 0.35).attr('stroke-width', 1.2);
+    const tip = tipFor(el);
+    svg.append('g').selectAll('circle').data(trail).join('circle').attr('cx', (r) => x(r.fragility)).attr('cy', (r) => y(r.stress))
+      .attr('r', (r, i) => (i === trail.length - 1 ? 7 : 2.6)).style('fill', (r, i) => (i === trail.length - 1 ? regColor(r.regime) : dash.colors[0]))
+      .attr('fill-opacity', (r, i) => (i === trail.length - 1 ? 1 : 0.15 + 0.6 * i / trail.length))
+      .style('stroke', (r, i) => (i === trail.length - 1 ? 'var(--color-fg)' : 'none'))
+      .on('pointerenter', (ev, r) => {
+        tip.replaceChildren();
+        const d = document.createElement('div'); d.className = 'd'; d.textContent = r.ds + ' · ' + r.regime; tip.appendChild(d);
+        tipLine(tip, null, '스트레스', f1(r.stress)); tipLine(tip, null, '취약성', f1(r.fragility));
+        const s = el.clientWidth / W; placeTip(el, tip, x(r.fragility) * s, y(r.stress) * s);
+      })
+      .on('pointerleave', () => { tip.hidden = true; });
+  }
+
+  function drawAlerts(table) {
+    const g = gate(table.parentElement, ['alerts']);
+    if (!g) { table.querySelector('tbody').replaceChildren(); return; }
+    fillTable(table, g[0].data, [
+      { f: 'level_kr', render: (td, r) => { const s = document.createElement('span'); s.className = 'mrm-pill ' + ({ high: 'bad', medium: 'warn' }[r.level] || ''); s.textContent = r.level_kr; td.appendChild(s); } },
+      { f: 'message' },
+      { f: 'value', num: true, fmt: (v) => { const n = N(v); return ok(n) ? (Math.abs(n) < 1 ? f3(n) : f1(n)) : ''; } },
+    ], (r) => r.id);
+  }
+
+  function drawHold(el, page) {
+    const t2 = dash.data('top2');
+    setAll(page, '.k-top2', t2.status === 'ok' ? p1(N(t2.data[0].share)) : '—');
+    const g = gate(el, ['top_holdings']);
+    if (!g) return;
+    el.replaceChildren();
+    const rows = g[0].data;
+    const mx = d3.max(rows, (r) => N(r.weight));
+    rows.forEach((r, i) => barRow(el, r.name, p1(N(r.weight)), N(r.weight) / mx * 100, i < 2 ? dash.colors[0] : 'var(--cds-chart-muted)', NaN));
+  }
+
+  let SIG = { key: 'pct', dir: 'desc', q: '' };
+  function drawSignals(table) {
+    const g = gate(table.parentElement, ['signals']);
+    if (!g) { table.querySelector('tbody').replaceChildren(); return; }
+    let rows = g[0].data;
+    const q = SIG.q.trim().toLowerCase();
+    if (q) rows = rows.filter((r) => [r.label, r.category_label, r.axis, r.use, r.name].join(' ').toLowerCase().includes(q));
+    rows = sortRows(rows, SIG.key, SIG.dir);
+    table.querySelectorAll('th').forEach((th) => th.setAttribute('aria-sort', th.dataset.field === SIG.key ? (SIG.dir === 'asc' ? 'ascending' : 'descending') : 'none'));
+    const aucFmt = (v) => { const n = N(v); return ok(n) ? f2(n) : '—'; };
+    fillTable(table, rows, [
+      { f: 'label' },
+      { f: 'category_label', hide: true },
+      { f: 'axis', hide: true },
+      { f: 'use', hide: true },
+      { f: 'raw', num: true, hide: true, fmt: (v) => { const n = N(v); return ok(n) ? (Math.abs(n) < 1 ? f3(n) : f2(n)) : '—'; } },
+      { f: 'pct', num: true, render: (td, r) => {
+        const v = N(r.pct);
+        const b = document.createElement('span'); b.className = 'mrm-cellbar';
+        b.style.width = (ok(v) ? v * 0.4 : 0) + 'px';
+        b.style.background = v >= 90 ? 'var(--cds-chart-status-critical)' : dash.colors[r.axis === '취약성' ? 1 : 0];
+        td.append(b, document.createTextNode(show(v, f1)));
+      } },
+      { f: 'change_5d', num: true, fmt: (v) => show(N(v), s1) },
+      { f: 'test_dd', num: true, fmt: aucFmt },
+      { f: 'test_vol', num: true, hide: true, fmt: aucFmt },
+    ], (r) => r.name);
+  }
+
+  function drawFresh(table) {
+    const g = gate(table.parentElement, ['freshness']);
+    if (!g) { table.querySelector('tbody').replaceChildren(); return; }
+    fillTable(table, g[0].data, [{ f: 'series' }, { f: 'last_obs' }, { f: 'note', hide: true }], (r) => enc(r.series) + ',' + enc(r.last_obs));
+  }
+
+  // ---------- HISTORY page ----------
+  let RANGE = '2025-07-01';
+  function sliceRange(rows) {
+    if (RANGE === 'all') return rows;
+    const end = rows[rows.length - 1].date;
+    let start;
+    if (RANGE === '3y') start = d3.utcYear.offset(end, -3);
+    else if (RANGE === '10y') start = d3.utcYear.offset(end, -10);
+    else start = new Date(RANGE + 'T00:00:00Z');
+    return rows.filter((r) => r.date >= start);
+  }
+  function thin(rows, maxN) {
+    if (rows.length <= maxN) return rows;
+    const step = Math.ceil(rows.length / maxN);
+    return rows.filter((r, i) => i % step === 0 || i === rows.length - 1);
+  }
+  function drawHistory(page) {
+    page.querySelectorAll('#range-seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.r === RANGE)));
+    const leg = page.querySelector('#reg-legend');
+    leg.replaceChildren(...REG.map((r) => { const s = document.createElement('span'); const i = document.createElement('i'); i.style.background = regColor(r); i.style.opacity = '.5'; s.append(i, document.createTextNode(r)); return s; }));
+    const idxEl = page.querySelector('#idx-chart');
+    if (gate(idxEl, ['history'])) {
+      const rows = sliceRange(histRows());
+      lineChart(idxEl, { rows, height: 260, log: true, y: d3.extent(rows, (r) => r.kospi).map((v, i) => v * (i ? 1.06 : 0.94)), yFmt: d3.format(',.0f'), bands: true,
+        series: [{ key: 'kospi', label: 'KOSPI', color: 'var(--color-fg)', fmt: d3.format(',.0f') }] });
+    }
+    const scEl = page.querySelector('#score-chart');
+    const g2 = gate(scEl, ['history', 'kpi']);
+    if (g2) {
+      const k = g2[1].data[0];
+      const rows = thin(sliceRange(histRows()), 2500);
+      lineChart(scEl, { rows, height: 260, y: [0, 100], yFmt: d3.format('.0f'),
+        refs: [{ y: N(k.cut_watch), label: '주의' }, { y: N(k.cut_alert), label: '경계', color: 'var(--color-warn)' }, { y: N(k.cut_danger), label: '위험', color: 'var(--color-bad)' }],
+        series: [
+          { key: 'composite', label: '종합', color: dash.colors[0], width: 2.2 },
+          { key: 'stress', label: '스트레스', color: dash.colors[2], width: 1.3, opacity: 0.85 },
+          { key: 'fragility', label: '취약성', color: dash.colors[1], width: 1.3, opacity: 0.85 },
+        ] });
+    }
+    const prEl = page.querySelector('#prob-chart');
+    const g3 = gate(prEl, ['history', 'kpi']);
+    if (g3) {
+      const k = g3[1].data[0];
+      const rows = thin(sliceRange(histRows()).filter((r) => ok(r.prob)), 2500);
+      lineChart(prEl, { rows, height: 220, y: [0, 1], yFmt: p0, refs: [{ y: N(k.base_rate_holdout), label: '평상시' }],
+        series: [{ key: 'prob', label: '확률', color: dash.colors[0], fmt: p0 }] });
+    }
+    const vEl = page.querySelector('#vol-chart');
+    if (gate(vEl, ['history'])) {
+      const rows = thin(sliceRange(histRows()), 2500);
+      lineChart(vEl, { rows, height: 220, yFmt: p0, y0: 0,
+        series: [{ key: 'vol', label: '예상변동성', color: dash.colors[0], fmt: p0 }, { key: 'dd', label: '낙폭', color: 'var(--color-bad)', fmt: p0, width: 1.5 }] });
+    }
+    const tt = page.querySelector('#trans-table');
+    const g4 = gate(tt.parentElement, ['transitions']);
+    if (g4) {
+      fillTable(tt, g4[0].data.slice().reverse(), [{ f: 'date' }, { f: 'regime', render: (td, r) => { const s = document.createElement('span'); s.className = 'mrm-pill'; s.style.color = regColor(r.regime); s.textContent = r.regime; td.appendChild(s); } }], (r) => r.date);
+    } else tt.querySelector('tbody').replaceChildren();
+  }
+
+  // ---------- VALIDATION page ----------
+  let SAMPLE = '홀드아웃 2012–';
+  function drawValidation(page) {
+    const ca = dash.data('composite_auc');
+    const comp = ca.status === 'ok' ? ca.data.find((r) => r.signal === 'COMPOSITE') : null;
+    setAll(page, '.k-auc-dd', comp ? f2(N(comp.test_dd)) : '—');
+    setAll(page, '.k-auc-vol', comp ? f2(N(comp.test_vol)) : '—');
+    page.querySelectorAll('#rs-seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.s === SAMPLE)));
+    drawRS(page.querySelector('#rs-chart'), page);
+    drawAUC(page.querySelector('#auc-chart'));
+    drawCal(page.querySelector('#cal-chart'));
+    const rsT = page.querySelector('#rs-table');
+    const g = gate(rsT.parentElement, ['regime_stats']);
+    if (g) {
+      fillTable(rsT, g[0].data, [
+        { f: 'sample' }, { f: 'regime' }, { f: 'days_share', num: true, fmt: (v) => show(N(v), p0) },
+        { f: 'p_dd10', num: true, fmt: (v) => show(N(v), p0) }, { f: 'p_dd20', num: true, fmt: (v) => show(N(v), p0) },
+        { f: 'avg_fwd_maxdd', num: true, fmt: (v) => show(N(v), p1) }, { f: 'avg_fwd_vol21', num: true, hide: true, fmt: (v) => show(N(v), p0) },
+        { f: 'avg_fwd_ret63', num: true, hide: true, fmt: (v) => show(N(v), sp1) },
+      ], (r) => r.key);
+    } else rsT.querySelector('tbody').replaceChildren();
+    const ovT = page.querySelector('#ov-table');
+    const g2 = gate(ovT.parentElement, ['overlay']);
+    if (g2) {
+      fillTable(ovT, g2[0].data, [
+        { f: 'strategy' }, { f: 'sample' }, { f: 'cagr', num: true, fmt: (v) => show(N(v), p1) }, { f: 'vol', num: true, hide: true, fmt: (v) => show(N(v), p1) },
+        { f: 'sharpe', num: true, fmt: (v) => show(N(v), f2) }, { f: 'maxdd', num: true, fmt: (v) => show(N(v), p1) },
+        { f: 'avg_exposure', num: true, hide: true, fmt: (v) => show(N(v), p0) },
+      ], (r) => r.key);
+    } else ovT.querySelector('tbody').replaceChildren();
+    const evT = page.querySelector('#ev-table');
+    const g3 = gate(evT.parentElement, ['events']);
+    if (g3) {
+      const nf = (v) => show(N(v), f1);
+      fillTable(evT, g3[0].data.slice().reverse(), [
+        { f: 'key' }, { f: 'trough' }, { f: 'depth', num: true, fmt: (v) => show(N(v), p1) },
+        { f: 'F_at_peak', num: true, fmt: nf }, { f: 'S_at_peak', num: true, fmt: nf }, { f: 'C_at_peak', num: true, fmt: nf },
+        { f: 'warn_days_6m_before', num: true, fmt: (v) => show(N(v), d3.format('d')) },
+        { f: 'days_peak_to_warn', num: true, fmt: (v) => show(N(v), d3.format('d')) },
+        { f: 'prob_at_peak', num: true, hide: true, fmt: (v) => show(N(v), p0) },
+      ], (r) => r.key);
+    } else evT.querySelector('tbody').replaceChildren();
+    const aT = page.querySelector('#auc-table');
+    const g4 = gate(aT.parentElement, ['composite_auc']);
+    if (g4) {
+      fillTable(aT, g4[0].data, [{ f: 'label' }, ...['train_dd', 'test_dd', 'train_vol', 'test_vol'].map((f) => ({ f, num: true, fmt: (v) => show(N(v), f2) }))], (r) => r.signal);
+    } else aT.querySelector('tbody').replaceChildren();
+  }
+
+  function drawRS(el, page) {
+    const leg = page.querySelector('#rs-legend');
+    const series = [{ k: 'p_dd10', label: 'P(−10% 이상)', color: dash.colors[0] }, { k: 'p_dd20', label: 'P(−20% 이상)', color: 'var(--cds-chart-status-critical)' }];
+    leg.replaceChildren(...series.map((s) => { const sp = document.createElement('span'); const i = document.createElement('i'); i.style.background = s.color; sp.append(i, document.createTextNode(s.label)); return sp; }));
+    const g = gate(el, ['regime_stats']);
+    if (!g) return;
+    const rows = g[0].data.filter((r) => r.sample === SAMPLE);
+    el.querySelectorAll(':scope > svg').forEach((n) => n.remove());
+    const W = Math.max(260, el.clientWidth), H = 230, mt = 16, mb = 24;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('height', H).attr('viewBox', `0 0 ${W} ${H}`).style('display', 'block');
+    const ymax = Math.max(0.1, d3.max(g[0].data, (r) => N(r.p_dd10)));
+    const y = d3.scaleLinear().domain([0, ymax]).nice(4).range([H - mb, mt]);
+    const ticks = y.ticks(4);
+    const ml = Math.ceil(d3.max(ticks, (t) => textW(svg, p0(t)))) + 10, mr = 6;
+    const x0 = d3.scaleBand().domain(REG).range([ml, W - mr]).paddingInner(0.25).paddingOuter(0.1);
+    const x1 = d3.scaleBand().domain(series.map((s) => s.k)).range([0, x0.bandwidth()]).padding(0.12);
+    ticks.forEach((t) => {
+      svg.append('line').attr('x1', ml).attr('x2', W - mr).attr('y1', y(t)).attr('y2', y(t)).style('stroke', 'var(--cds-chart-grid)');
+      svg.append('text').attr('x', ml - 6).attr('y', y(t)).attr('dy', '0.32em').attr('text-anchor', 'end').attr('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg-muted)').text(p0(t));
+    });
+    const tip = tipFor(el);
+    rows.forEach((r) => {
+      series.forEach((s) => {
+        const v = N(r[s.k]);
+        if (!ok(v)) return;
+        const bw = Math.min(32, x1.bandwidth());
+        const bx = x0(r.regime) + x1(s.k) + (x1.bandwidth() - bw) / 2;
+        svg.append('rect').attr('x', bx).attr('y', y(v)).attr('width', bw).attr('height', Math.max(0, y(0) - y(v))).attr('rx', 4).style('fill', s.color)
+          .on('pointerenter', () => { tip.replaceChildren(); const d = document.createElement('div'); d.className = 'd'; d.textContent = SAMPLE + ' · ' + r.regime; tip.appendChild(d); tipLine(tip, s.color, s.label, p1(v)); const sc = el.clientWidth / W; placeTip(el, tip, (bx + bw / 2) * sc, y(v) * sc); })
+          .on('pointerleave', () => { tip.hidden = true; });
+        svg.append('text').attr('x', bx + bw / 2).attr('y', y(v) - 4).attr('text-anchor', 'middle').attr('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg-muted)').text(p0(v));
+      });
+      svg.append('text').attr('x', x0(r.regime) + x0.bandwidth() / 2).attr('y', H - 6).attr('text-anchor', 'middle').attr('font-size', 'var(--cds-font-size-caption)').style('fill', regColor(r.regime)).text(r.regime);
+    });
+    svg.append('line').attr('x1', ml).attr('x2', W - mr).attr('y1', y(0)).attr('y2', y(0)).style('stroke', 'var(--cds-chart-axis)');
+  }
+
+  function drawAUC(el) {
+    const g = gate(el, ['composite_auc']);
+    if (!g) return;
+    const rows = g[0].data.filter((r) => ok(N(r.test_dd)));
+    el.querySelectorAll(':scope > svg').forEach((n) => n.remove());
+    const rowH = 24, mt = 8, mb = 24, H = mt + mb + rowH * rows.length;
+    el.style.minHeight = H + 'px';
+    const W = Math.max(260, el.clientWidth);
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('height', H).attr('viewBox', `0 0 ${W} ${H}`).style('display', 'block');
+    const ml = Math.ceil(d3.max(rows, (r) => textW(svg, r.label))) + 10, mr = 12;
+    const x = d3.scaleLinear().domain([0.4, 0.8]).range([ml, W - mr]);
+    const y = d3.scaleBand().domain(rows.map((r) => r.signal)).range([mt, H - mb]).padding(0.3);
+    x.ticks(4).forEach((t) => {
+      svg.append('line').attr('x1', x(t)).attr('x2', x(t)).attr('y1', mt).attr('y2', H - mb).style('stroke', t === 0.5 ? 'var(--cds-chart-reference)' : 'var(--cds-chart-grid)').attr('stroke-dasharray', t === 0.5 ? '4 4' : null);
+      svg.append('text').attr('x', x(t)).attr('y', H - 6).attr('text-anchor', 'middle').attr('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg-muted)').text(f1(t));
+    });
+    const tip = tipFor(el);
+    rows.forEach((r) => {
+      const cy = y(r.signal) + y.bandwidth() / 2;
+      const a = Math.max(0.4, Math.min(0.8, N(r.train_dd))), b = Math.max(0.4, Math.min(0.8, N(r.test_dd)));
+      const main = ['COMPOSITE', 'STRESS', 'FRAGILITY', 'WF_PROB'].includes(r.signal);
+      const col = main ? dash.colors[0] : 'var(--cds-chart-muted)';
+      svg.append('text').attr('x', ml - 8).attr('y', cy).attr('dy', '0.32em').attr('text-anchor', 'end').attr('font-size', 'var(--cds-font-size-caption)')
+        .style('fill', main ? 'var(--color-fg)' : 'var(--color-fg-muted)').text(r.label);
+      svg.append('line').attr('x1', x(a)).attr('x2', x(b)).attr('y1', cy).attr('y2', cy).style('stroke', col).attr('stroke-width', 1.5);
+      svg.append('circle').attr('cx', x(a)).attr('cy', cy).attr('r', 4).style('fill', 'var(--color-panel)').style('stroke', col).attr('stroke-width', 1.5);
+      svg.append('circle').attr('cx', x(b)).attr('cy', cy).attr('r', 4.5).style('fill', col)
+        .on('pointerenter', () => { tip.replaceChildren(); const d = document.createElement('div'); d.className = 'd'; d.textContent = r.label; tip.appendChild(d); tipLine(tip, null, '학습', f3(N(r.train_dd))); tipLine(tip, null, '홀드아웃', f3(N(r.test_dd))); const s = el.clientWidth / W; placeTip(el, tip, x(b) * s, cy * s); })
+        .on('pointerleave', () => { tip.hidden = true; });
+    });
+  }
+
+  function drawCal(el) {
+    const g = gate(el, ['calibration']);
+    if (!g) return;
+    const rows = g[0].data;
+    el.querySelectorAll(':scope > svg').forEach((n) => n.remove());
+    const W = Math.max(240, el.clientWidth), H = 260, ml = 52, mr = 12, mt = 10, mb = 34;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('height', H).attr('viewBox', `0 0 ${W} ${H}`).style('display', 'block');
+    const x = d3.scaleLinear().domain([0, 1]).range([ml, W - mr]);
+    const y = d3.scaleLinear().domain([0, 1]).range([H - mb, mt]);
+    [0, 0.25, 0.5, 0.75, 1].forEach((t) => {
+      svg.append('line').attr('x1', x(t)).attr('x2', x(t)).attr('y1', mt).attr('y2', H - mb).style('stroke', 'var(--cds-chart-grid)');
+      svg.append('line').attr('x1', ml).attr('x2', W - mr).attr('y1', y(t)).attr('y2', y(t)).style('stroke', 'var(--cds-chart-grid)');
+      svg.append('text').attr('x', x(t)).attr('y', H - mb + 14).attr('text-anchor', 'middle').attr('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg-muted)').text(p0(t));
+      svg.append('text').attr('x', ml - 6).attr('y', y(t)).attr('dy', '0.32em').attr('text-anchor', 'end').attr('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg-muted)').text(p0(t));
+    });
+    svg.append('line').attr('x1', x(0)).attr('y1', y(0)).attr('x2', x(1)).attr('y2', y(1)).style('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '4 4');
+    svg.append('text').attr('x', (ml + W - mr) / 2).attr('y', H - 4).attr('text-anchor', 'middle').attr('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg-muted)').text('예측 확률 →');
+    svg.append('text').attr('transform', `translate(10,${(mt + H - mb) / 2}) rotate(-90)`).attr('text-anchor', 'middle').attr('font-size', 'var(--cds-font-size-caption)').style('fill', 'var(--color-fg-muted)').text('실제 빈도 →');
+    const r = d3.scaleSqrt().domain([0, d3.max(rows, (d) => N(d.n))]).range([2, 11]);
+    const pts = rows.map((d) => ({ ...d, px: N(d.predicted), py: N(d.realized), nn: N(d.n) }));
+    svg.append('path').datum(pts).attr('d', d3.line().x((d) => x(d.px)).y((d) => y(d.py))).attr('fill', 'none').style('stroke', dash.colors[0]).attr('stroke-width', 2).attr('stroke-linejoin', 'round');
+    const tip = tipFor(el);
+    svg.append('g').selectAll('circle').data(pts).join('circle').attr('cx', (d) => x(d.px)).attr('cy', (d) => y(d.py)).attr('r', (d) => r(d.nn))
+      .style('fill', dash.colors[0]).attr('fill-opacity', 0.75)
+      .on('pointerenter', (ev, d) => { tip.replaceChildren(); const dd = document.createElement('div'); dd.className = 'd'; dd.textContent = '구간 ' + d.bin; tip.appendChild(dd); tipLine(tip, null, '예측', p1(d.px)); tipLine(tip, null, '실제', p1(d.py)); tipLine(tip, null, '일수', cm0(d.nn)); const s = el.clientWidth / W; placeTip(el, tip, x(d.px) * s, y(d.py) * s); })
+      .on('pointerleave', () => { tip.hidden = true; });
+  }
+
+  // ---------- tabs ----------
+  const built = {};
+  const drawers = { now: drawNow, history: drawHistory, validation: drawValidation, method: () => {} };
+  let active = null;
+  function build(id) {
+    if (built[id]) return;
+    const page = document.getElementById(id);
+    page.appendChild(document.getElementById('tpl-' + id).content.cloneNode(true));
+    built[id] = true;
+    if (id === 'now') {
+      page.querySelector('#sig-search').addEventListener('input', (e) => { SIG.q = e.target.value; drawSignals(page.querySelector('#sig-table')); });
+      page.querySelectorAll('#sig-table th button').forEach((b) => b.addEventListener('click', () => {
+        const k = b.dataset.k;
+        SIG = { ...SIG, key: k, dir: SIG.key === k && SIG.dir === 'desc' ? 'asc' : 'desc' };
+        drawSignals(page.querySelector('#sig-table'));
+      }));
+    }
+    if (id === 'history') {
+      page.querySelectorAll('#range-seg button').forEach((b) => b.addEventListener('click', () => { RANGE = b.dataset.r; drawHistory(page); }));
+    }
+    if (id === 'validation') {
+      page.querySelectorAll('#rs-seg button').forEach((b) => b.addEventListener('click', () => { SAMPLE = b.dataset.s; drawValidation(page); }));
+    }
+  }
+  function showTab(id, link) {
+    if (!drawers[id]) id = 'now';
+    active = id;
+    build(id);
+    document.querySelectorAll('.mrm-tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === id)));
+    document.querySelectorAll('.mrm-page').forEach((p) => { p.hidden = p.id !== id; });
+    if (link) dash.setLink(id);
+    drawers[id](document.getElementById(id));
+  }
+  document.querySelectorAll('.mrm-tab').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab, true)));
+  showTab(location.hash.slice(1) || 'now', false);
+  window.addEventListener('hashchange', () => showTab(location.hash.slice(1) || 'now', false));
+
+  dash.onData(() => {
+    drawHeader();
+    if (active) drawers[active](document.getElementById(active));
+  });
+})();
+</script>
+</body>
+</html>
