@@ -1,0 +1,89 @@
+name: KOSPI 리스크 모니터
+
+on:
+  schedule:
+    # UTC 월–금 22:30 = 한국시간 화–토 07:30 (전 거래일 장 마감 데이터 반영)
+    - cron: "30 22 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: "Notion 로그에 과거 N거래일 기록 (처음 한 번 250 권장, 평소 0)"
+        required: false
+        default: "0"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: risk-monitor
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: 패키지 설치
+        run: pip install -r requirements.txt
+
+      - name: 한글 글꼴 설치 (차트 이미지용)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk && fc-cache -f > /dev/null
+
+      - name: 데이터 받기 + 모델 계산
+        run: python run_monitor.py --market KR --data-root data_root --sync --refresh --out outputs
+
+      - name: 대시보드 웹페이지 만들기
+        run: python notion_kit/build_site.py --in outputs/KR --out site
+
+      - name: GitHub Pages 사용 여부 확인
+        id: pages
+        continue-on-error: true
+        uses: actions/configure-pages@v5
+
+      - name: Notion 동기화
+        if: env.NOTION_TOKEN != ''
+        env:
+          SITE_URL: ${{ steps.pages.outcome == 'success' && steps.pages.outputs.base_url || '' }}
+        run: >
+          python notion_kit/notion_sync.py --in outputs/KR --charts site/charts
+          --backfill ${{ github.event.inputs.backfill || 0 }}
+
+      - name: 웹페이지 업로드
+        if: steps.pages.outcome == 'success'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: GitHub Pages 배포
+        id: deploy
+        if: steps.pages.outcome == 'success'
+        uses: actions/deploy-pages@v4
+
+      - name: 결과 파일 보관 (30일)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: risk-outputs
+          retention-days: 30
+          if-no-files-found: ignore
+          path: |
+            outputs/KR/snapshot.json
+            outputs/KR/dashboard
+            site/index.html
+            site/charts
