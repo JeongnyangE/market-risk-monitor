@@ -50,9 +50,22 @@ def prepare_kr(data_root: str, manual_csv: str | None, cache_dir: str, refresh: 
     macro = D.align_macro(macro_raw, mkt.index)
     # 상위 종목 정보(스냅샷용)
     last = panel["mcap"].iloc[-1].dropna().sort_values(ascending=False)
+    r_last, c_last, a_last = panel["ret"].iloc[-1], panel["close"].iloc[-1], panel["amount"].iloc[-1]
     top = [{"code": c, "name": str(panel["names"].get(c, c)), "weight": float(v / last.sum()),
-            "ret_1d": float(panel["ret"].iloc[-1].get(c, np.nan))} for c, v in last.head(10).items()]
-    meta = {"market": "KOSPI (시총가중 재구성, 보통주)", "top_holdings": top,
+            "ret_1d": float(r_last.get(c, np.nan)), "close": float(c_last.get(c, np.nan))}
+           for c, v in last.head(10).items()]
+    # 급등·급락: 시총 상위 200 종목 안에서만 (소형주 급변 제외)
+    big = [c for c in last.head(200).index if not np.isnan(r_last.get(c, np.nan))]
+    mv = pd.DataFrame({"code": big, "name": [str(panel["names"].get(c, c)) for c in big],
+                       "ret_1d": [float(r_last[c]) for c in big], "close": [float(c_last.get(c, np.nan)) for c in big],
+                       "mcap": [float(last[c]) for c in big], "amount": [float(a_last.get(c, np.nan)) for c in big]})
+    movers = pd.concat([mv.nlargest(6, "ret_1d").assign(side="gainer"),
+                        mv.nsmallest(6, "ret_1d").assign(side="loser")]).to_dict(orient="records")
+    rr = r_last.dropna()
+    breadth = {"date": str(panel["ret"].index[-1].date()), "up": int((rr > 0).sum()), "down": int((rr < 0).sum()),
+               "flat": int((rr == 0).sum()), "total": int(len(rr)), "mkt_ret": float(mkt.iloc[-1]),
+               "turnover_krw": float(a_last.sum())}
+    meta = {"market": "KOSPI (시총가중 재구성, 보통주)", "top_holdings": top, "movers": movers, "breadth": breadth,
             "macro_last_obs": {c: str(macro_raw[c].dropna().index.max().date()) for c in macro_raw},
             "manual_obs": macro_raw.attrs.get("manual", [])}
     return mkt, xs, macro, meta

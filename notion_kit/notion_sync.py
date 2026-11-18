@@ -426,6 +426,31 @@ def build_blocks(data: dict, images: dict, site_url: str | None, generated_at: s
         names = ", ".join(re.sub(r" 역사적 상위.*$", "", str(m)) for m in info["message"])
         blocks.append(para(rt("역사적 상위 5% 극단 신호: ", bold=True), rt(names)))
 
+    br, mv = data.get("breadth", pd.DataFrame()), data.get("movers", pd.DataFrame())
+    if len(br) or len(mv):
+        blocks.append(h2("코스피 시장 폭과 급등락"))
+        if len(br):
+            b = br.iloc[0]
+            blocks.append(para(rt(f"{b['date']} 종가 기준  ", color="gray"), rt(f"▲ 상승 {int(b['up'])}", color="green"),
+                               rt("   "), rt(f"▼ 하락 {int(b['down'])}", color="red"),
+                               rt(f"   ■ 보합 {int(b['flat'])}", color="gray")))
+        if len(mv):
+            rows = [["구분", "종목", "종가", "등락률"]]
+            for side, lab in (("gainer", "급등"), ("loser", "급락")):
+                for _, r in mv[mv["side"] == side].iterrows():
+                    rows.append([lab, str(r["name"]), f"{float(r['close']):,.0f}", f"{float(r['ret_1d']):+.2%}"])
+            blocks += [table(rows), para(rt("급등락은 시가총액 상위 200 종목 기준입니다.", color="gray"))]
+
+    nw = data.get("news", pd.DataFrame())
+    if len(nw):
+        blocks.append(h2("오늘의 시장 이슈"))
+        for _, n in nw.head(10).iterrows():
+            link = str(n["link"]) if str(n.get("link", "")).startswith("http") else None
+            when = str(n.get("published", ""))[11:16]
+            blocks.append(bullet(rt(f"[{n['topic']}] ", color="gray"), rt(str(n["title"]), link=link),
+                                 rt(f"  {n.get('source', '') if pd.notna(n.get('source')) else ''} {when}".rstrip(), color="gray")))
+        blocks.append(para(rt("Google 뉴스 헤드라인입니다. 제목을 누르면 원문으로 이동합니다.", color="gray")))
+
     sig = data["signals"]
     if len(sig):
         s2 = sig[(sig["use"] == "종합점수") & sig["pct"].notna()].sort_values("pct", ascending=False).head(8)
@@ -542,7 +567,8 @@ def load_inputs(in_dir: str) -> dict:
         raise SystemExit(f"{d}/kpi.csv 가 없습니다. 먼저 run_monitor.py 를 실행하세요.")
     return {"kpi": kpi.iloc[0].to_dict(), "cats": rd("categories.csv"), "alerts": rd("alerts.csv"),
             "signals": rd("signals.csv"), "hist": rd("history.csv"), "trans": rd("transitions.csv"),
-            "fresh": rd("freshness.csv")}
+            "fresh": rd("freshness.csv"), "movers": rd("movers.csv"), "breadth": rd("breadth.csv"),
+            "news": rd("news.csv")}
 
 
 HINTS = {

@@ -77,6 +77,19 @@ class NotionSyncTest(unittest.TestCase):
         finally:
             os.environ["NOTION_TOKEN"] = mock.TOKEN
 
+    def test_news_and_movers_blocks(self):
+        import pandas as pd
+        data = self.ns.load_inputs(os.path.join(ROOT, "outputs", "KR"))
+        data["news"] = pd.DataFrame([{"topic": "국내 증시", "title": "테스트 헤드라인 " + "가" * 30,
+                                      "source": "테스트", "link": "https://example.com/a?x=" + "b" * 400,
+                                      "published": "2026-11-17 16:12"}])
+        blocks = self.ns.build_blocks(data, {}, None, "2026-11-18 00:00 UTC")
+        heads = [b["heading_2"]["rich_text"][0]["text"]["content"] for b in blocks if b["type"] == "heading_2"]
+        self.assertIn("오늘의 시장 이슈", heads)
+        self.assertIn("코스피 시장 폭과 급등락", heads)
+        for i, b in enumerate(blocks):            # 가짜 서버의 API 제약 검사기로 전부 검증
+            mock.validate_block(b, self.st, 1, f"blocks[{i}]")
+
     def test_parse_id(self):
         h = "1a2b3c4d5e6f40718293a4b5c6d7e8f9"
         want = "1a2b3c4d-5e6f-4071-8293-a4b5c6d7e8f9"

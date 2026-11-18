@@ -140,6 +140,10 @@ def export_dashboard(res: dict, out_dir: str, anchor: tuple[str, float] | None =
     # 12) 상위 종목 / 레짐 전환
     th = pd.DataFrame(s["meta"]["top_holdings"])
     save("top_holdings.csv", th)
+    if s["meta"].get("movers"):
+        save("movers.csv", pd.DataFrame(s["meta"]["movers"]))
+    if s["meta"].get("breadth"):
+        save("breadth.csv", pd.DataFrame([s["meta"]["breadth"]]))
     tr = pd.DataFrame(s["transitions"][-14:])
     save("transitions.csv", tr)
 

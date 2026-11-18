@@ -29,8 +29,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 TABLES = ["kpi", "categories", "signals", "alerts", "history", "regime_stats", "composite_auc", "events",
-          "overlay", "calibration", "freshness", "top_holdings", "transitions"]
-SOURCES = "KRX 전종목(FinanceData/marcap), Cboe VIX, FRB H.10 환율, EIA 브렌트유"
+          "overlay", "calibration", "freshness", "top_holdings", "transitions", "movers", "breadth", "news"]
+SOURCES = "KRX 전종목(FinanceData/marcap), Cboe VIX, FRB H.10 환율, EIA 브렌트유, Google 뉴스, TradingView"
 
 
 def _clean(v, digits: int = 6):
@@ -52,8 +52,11 @@ def table_json(df: pd.DataFrame, digits: int = 6) -> dict:
 
 
 def build(in_dir: str, out_dir: str, template: str | None = None, d3_path: str | None = None,
-          charts: bool = True) -> dict:
+          charts: bool = True, news: bool = True) -> dict:
     dash_dir = os.path.join(in_dir, "dashboard")
+    if news:
+        from news import update as update_news
+        print(f"[site] 시장 이슈 헤드라인 {update_news(dash_dir)}건")
     template = template or os.path.join(HERE, "site_template.html")
     d3_path = d3_path or os.path.join(HERE, "vendor", "d3.min.js")
     os.makedirs(out_dir, exist_ok=True)
@@ -63,7 +66,7 @@ def build(in_dir: str, out_dir: str, template: str | None = None, d3_path: str |
         if not os.path.exists(p):
             print(f"[site] {t}.csv 없음 — 해당 카드는 비어 보입니다")
             continue
-        df = pd.read_csv(p, dtype={"code": str}) if t == "top_holdings" else pd.read_csv(p)
+        df = pd.read_csv(p, dtype={"code": str}) if t in ("top_holdings", "movers") else pd.read_csv(p)
         tables[t] = table_json(df, digits=5 if t == "history" else 6)
     kpi = pd.read_csv(os.path.join(dash_dir, "kpi.csv")).iloc[0].to_dict()
     now = dt.datetime.now(dt.timezone.utc)
@@ -94,8 +97,9 @@ def main():
     ap.add_argument("--in", dest="in_dir", default="outputs/KR", help="run_monitor.py 결과 폴더")
     ap.add_argument("--out", default="site")
     ap.add_argument("--no-charts", action="store_true")
+    ap.add_argument("--no-news", action="store_true", help="헤드라인을 새로 받지 않음")
     a = ap.parse_args()
-    res = build(a.in_dir, a.out, charts=not a.no_charts)
+    res = build(a.in_dir, a.out, charts=not a.no_charts, news=not a.no_news)
     print(f"[site] {res['index']} ({res['bytes'] / 1e6:.2f} MB)")
     for k, v in res.get("charts", {}).items():
         print(f"[site] chart {k}: {v}")
